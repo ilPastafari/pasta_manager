@@ -1,0 +1,303 @@
+```html
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utente Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 id="welcome-label">Benvenuto!</h1>
+        <button id="registra-utente-button">Registra Utente</button>
+        <button id="esegui-login-button">Esegui Login</button>
+    </div>
+
+    <!-- Registrazione Utente Modal -->
+    <div id="registrazione-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Registrazione Utente</h2>
+            <form id="registrazione-form">
+                <label for="nome">Nome utente:</label>
+                <input type="text" id="nome" name="nome"><br><br>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password"><br><br>
+                <button id="conferma-registrazione-button">Conferma</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Utente Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Login Utente</h2>
+            <form id="login-form">
+                <label for="utente">Seleziona un utente:</label>
+                <select id="utente" name="utente"></select><br><br>
+                <button id="seleziona-utente-button">Seleziona Utente</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inserisci Password Modal -->
+    <div id="password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Inserisci Password</h2>
+            <form id="password-form">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password"><br><br>
+                <button id="verifica-password-button">Verifica Password</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+```
+
+```javascript
+// script.js
+
+// Configurazione file
+const ORDINI_FILE = "ordini.json";
+const UTENTI_FILE = "utenti.json";
+const CHAT_FILE = "chat.json";
+
+// Variabile globale per il nome utente attualmente loggato
+let utenteCorrente = null;
+
+// Funzione per caricare file utenti.json
+function caricaUtenti() {
+    fetch(UTENTI_FILE)
+        .then(response => response.json())
+        .then(data => {
+            return data;
+        })
+        .catch(error => {
+            console.error("Error loading utenti.json:", error);
+            return [];
+        });
+}
+
+// Funzione per caricare ordini
+function caricaOrdini() {
+    fetch(ORDINI_FILE)
+        .then(response => response.json())
+        .then(data => {
+            return data;
+        })
+        .catch(error => {
+            console.error("Error loading ordini.json:", error);
+            return [];
+        });
+}
+
+// Funzione per salvare ordini
+function salvaOrdini(ordini) {
+    fetch(ORDINI_FILE, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(ordini)
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Ordini salvati con successo!");
+        })
+        .catch(error => {
+            console.error("Error saving ordini.json:", error);
+        });
+}
+
+// Funzione per caricare i messaggi della chat
+function caricaChat() {
+    fetch(CHAT_FILE)
+        .then(response => response.json())
+        .then(data => {
+            return data;
+        })
+        .catch(error => {
+            console.error("Error loading chat.json:", error);
+            return [];
+        });
+}
+
+// Funzione per salvare i messaggi della chat
+function salvaChat(chat) {
+    fetch(CHAT_FILE, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(chat)
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Chat salvata con successo!");
+        })
+        .catch(error => {
+            console.error("Error saving chat.json:", error);
+        });
+}
+
+// Funzione per registrare un nuovo utente
+function registraUtente() {
+    const registrazioneModal = document.getElementById("registrazione-modal");
+    const registrazioneForm = document.getElementById("registrazione-form");
+    const nomeInput = document.getElementById("nome");
+    const passwordInput = document.getElementById("password");
+
+    registrazioneModal.style.display = "block";
+
+    document.getElementById("conferma-registrazione-button").addEventListener("click", (e) => {
+        e.preventDefault();
+
+        const nome = nomeInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!nome || !password) {
+            alert("Nome utente e password sono obbligatori.");
+            return;
+        }
+
+        caricaUtenti().then((utenti) => {
+            for (const utente of utenti) {
+                if (utente.nome === nome) {
+                    alert("Il nome utente è già stato registrato.");
+                    return;
+                }
+            }
+
+            utenti.push({ nome, password });
+
+            fetch(UTENTI_FILE, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(utenti)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Utente registrato con successo!");
+                    registrazioneModal.style.display = "none";
+                })
+                .catch(error => {
+                    console.error("Error registering user:", error);
+                });
+        });
+    });
+}
+
+// Funzione per eseguire il login
+function eseguiLogin() {
+    const loginModal = document.getElementById("login-modal");
+    const loginForm = document.getElementById("login-form");
+    const utenteSelect = document.getElementById("utente");
+
+    loginModal.style.display = "block";
+
+    caricaUtenti().then((utenti) => {
+        for (const utente of utenti) {
+            const option = document.createElement("option");
+            option.value = utente.nome;
+            option.text = utente.nome;
+            utenteSelect.appendChild(option);
+        }
+    });
+
+    document.getElementById("seleziona-utente-button").addEventListener("click", () => {
+        const utente = utenteSelect.value;
+
+        if (!utente) {
+            alert("Seleziona un utente dalla lista.");
+            return;
+        }
+
+        const passwordModal = document.getElementById("password-modal");
+        const passwordForm = document.getElementById("password-form");
+        const passwordInput = document.getElementById("password");
+
+        passwordModal.style.display = "block";
+
+        document.getElementById("verifica-password-button").addEventListener("click", (e) => {
+            e.preventDefault();
+
+            const password = passwordInput.value;
+
+            caricaUtenti().then((utenti) => {
+                for (const utente of utenti) {
+                    if (utente.nome === utente && utente.password === password) {
+                        utenteCorrente = utente.nome;
+                        alert(`Accesso riuscito! Ciao ${utente.nome}.`);
+                        document.getElementById("welcome-label").textContent = `Benvenuto, ${utente.nome}!`;
+                        passwordModal.style.display = "none";
+                        loginModal.style.display = "none";
+                        return;
+                    }
+                }
+
+                alert("Password errata.");
+            });
+        });
+    });
+}
+
+document.getElementById("registra-utente-button").addEventListener("click", registraUtente);
+document.getElementById("esegui-login-button").addEventListener("click", eseguiLogin);
+```
+
+```css
+/* style.css */
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 80%;
+    margin: 40px auto;
+    text-align: center;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+```
